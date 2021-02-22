@@ -1,8 +1,9 @@
 import csv
 import enum
+from pathlib import Path
+from typing import List, Union
 
 import click as click
-import xlrd as xlrd
 import xlsxwriter as xlsxwriter
 
 
@@ -41,21 +42,33 @@ class Columns(enum.Enum):
     NET_AMOUNT_ACCOUNT_CURRENCY = 16
 
 
-def extract_and_populate():
-    input_file = "input.csv"
+@click.command()
+@click.option('--directory', type=click.Path(), default=Path().absolute())
+def extract_and_populate(directory: str):
+    output_base_directory = Path(directory)
+
+    for input_file in Path(directory).glob("*.csv"):
+        with open(input_file) as csv_file:
+            csv_reader = csv.reader(csv_file, delimiter=',')
+            rows_to_write = [get_row_to_write(row) for row in csv_reader]
+
+        sample_trade_date = rows_to_write[1][0]
+        output_file_name = get_output_file_name(sample_trade_date)
+        output_path = output_base_directory.parent / output_file_name  # I want files one directory above CSVs
+
+        with xlsxwriter.Workbook(output_path) as excel_book:
+            sheet = excel_book.add_worksheet()
+
+            for count, row in enumerate(rows_to_write):
+                sheet.write_row(row=count, col=0, data=row)
 
 
-    with open(input_file) as csv_file, xlsxwriter.Workbook('hello.xlsx') as excel_book:
-        sheet = excel_book.add_worksheet()
-        csv_reader = csv.reader(csv_file, delimiter=',')
-
-        for count, row in enumerate(csv_reader):
-            rows_to_write = get_row_to_write(row)
-            # Print relevant indexes to the Excel Sheet
-            sheet.write_row(row=count, col=0, data=rows_to_write)
+def get_output_file_name(trade_date: str) -> str:
+    month, day, year = trade_date.split()
+    return f"{year} {month}.xlsx"
 
 
-def get_row_to_write(row):
+def get_row_to_write(row: List[str]) -> List[Union[int, float, str]]:
     relevant_column_indexes = [
         Columns.TRADE_DATE.value,
         Columns.ACTION.value,
@@ -65,6 +78,7 @@ def get_row_to_write(row):
         Columns.GROSS_AMOUNT.value,
         Columns.COMMISION.value,
         Columns.SEC_FEES.value,
+        Columns.NET_AMOUNT.value,
     ]
     row_to_write = []
 
@@ -99,6 +113,7 @@ def get_valid_number(number: str) -> float:
 
 
 def get_symbol_from_description(description: str) -> str:
+    """Used for options as for w.e reason, no symbol is provided."""
     return description.split()[1]
 
 
