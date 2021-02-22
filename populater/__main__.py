@@ -7,21 +7,6 @@ import click as click
 import xlsxwriter as xlsxwriter
 
 
-class Month(enum.Enum):
-    JANUARY = 1
-    FEBRUARY = 2
-    MARCH = 3
-    APRIL = 4
-    MAY = 5
-    JUNE = 6
-    JULY = 7
-    AUGUST = 8
-    SEPTEMBER = 9
-    OCTOBER = 10
-    NOVEMBER = 11
-    DECEMBER = 12
-
-
 class Columns(enum.Enum):
     CURRENCY = 0
     TRADE_DATE = 1
